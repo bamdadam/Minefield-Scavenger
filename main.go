@@ -1,21 +1,63 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/bamdadam/Minefield-Scavenger/internal/game"
+	"github.com/bamdadam/Minefield-Scavenger/internal/config"
+	"github.com/bamdadam/Minefield-Scavenger/internal/db/psql"
+	"github.com/bamdadam/Minefield-Scavenger/internal/http/handler"
+	"github.com/bamdadam/Minefield-Scavenger/internal/player"
+	stor "github.com/bamdadam/Minefield-Scavenger/internal/store/psql"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	game, err := game.NewGame(5, 10, 50)
+	exitCh := make(chan struct{})
+	go gracefullShutdown(exitCh)
+	app := fiber.New(fiber.Config{
+		IdleTimeout: 30 * time.Second,
+	})
+	go func() {
+		<-exitCh
+		app.ShutdownWithTimeout(30 * time.Second)
+	}()
+	// player cache
+	cache := player.NewPlayerCache()
+	ticker := time.NewTicker(time.Minute * 30)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				cache.Eviction(time.Hour)
+			}
+		}
+	}()
+	//db
+	cfg := config.New()
+	db, err := psql.NewPSQLDB(context.Background(), cfg.Psql)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(game)
-	game.MakeMove(0, 0)
-	game.MakeMove(2, 6)
-	game.MakeMove(5, 5)
-	game.MakeMove(4, 8)
-	game.MakeMove(1, 5)
-	fmt.Println(game)
+	store := stor.NewPSQLStore(db)
+	ph := handler.NewPlayerHandler(store, cache)
+	player := app.Group("/player")
+	ph.RegisterHandlers(player)
+	if err := app.Listen(":8080"); err != nil {
+		fmt.Println("Can't serve server", err)
+	}
+}
+
+func gracefullShutdown(exitCh chan<- struct{}) {
+	c := make(chan os.Signal, 3)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("close handler", "Ctrl+C pressed in Terminal")
+		close(exitCh)
+	}()
 }

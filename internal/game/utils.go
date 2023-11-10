@@ -7,11 +7,11 @@ import (
 	"math/big"
 )
 
-func convertBoard(b []int8, bLen int) (*board, error) {
+func convertBoard(b []int8, bLen int) (*Board, error) {
 	if bLen*bLen != len(b) {
 		return nil, errors.New("board should be equal to bLen*bLen")
 	}
-	br := make(board, bLen)
+	br := make(Board, bLen)
 	for i := 0; i < bLen; i++ {
 		br[i] = make([]int8, bLen)
 	}
@@ -23,11 +23,11 @@ func convertBoard(b []int8, bLen int) (*board, error) {
 	return &br, nil
 }
 
-func converSeenBoard(s []bool, bLen int) (*seen, error) {
+func converSeenBoard(s []bool, bLen int) (*Seen, error) {
 	if bLen*bLen != len(s) {
 		return nil, errors.New("see board should be equal to bLen*bLen")
 	}
-	sr := make(seen, bLen)
+	sr := make(Seen, bLen)
 	for i := 0; i < bLen; i++ {
 		sr[i] = make([]bool, bLen)
 	}
@@ -39,8 +39,8 @@ func converSeenBoard(s []bool, bLen int) (*seen, error) {
 	return &sr, nil
 }
 
-func createBoard(bLen, bombPercent, numKeyShards int) (*board, error) {
-	br := make(board, bLen)
+func createBoard(bLen, bombPercent, numKeyShards int) (*Board, error) {
+	br := make(Board, bLen)
 	for i := 0; i < bLen; i++ {
 		br[i] = make([]int8, bLen)
 	}
