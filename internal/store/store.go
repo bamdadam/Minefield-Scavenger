@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"time"
 
 	"github.com/bamdadam/Minefield-Scavenger/internal/game"
 	"github.com/bamdadam/Minefield-Scavenger/internal/model"
@@ -10,10 +9,12 @@ import (
 
 type Store interface {
 	// game
-	CreateNewGame(ctx context.Context, keyShards, fieldLen, bombPercent, playerId int, board game.Board, seen game.Seen) (int, error)
+	CreateNewGame(ctx context.Context, g model.GameModel) (*model.GameModel, error)
 	UpdateGame(ctx context.Context, gameId int, board game.Board, seen game.Seen) error
-	RetrieveGame(ctx context.Context, playerId int, date time.Time) (*model.GameModel, error)
+	RetrieveLastNGame(ctx context.Context, playerId, n int) ([]*model.GameModel, error)
+	RetrieveTodaysGame(ctx context.Context, playerId int) (*model.GameModel, error)
 	// user
-	CreateUser(ctx context.Context, username string) (*model.UserModel, error)
+	CreateUser(ctx context.Context, user model.UserModel) (*model.UserModel, error)
 	GetUser(ctx context.Context, username string) (*model.UserModel, error)
+	UpdateUser(ctx context.Context, numberOfKeys, PointsLeft, NextMoveCost int) error
 }

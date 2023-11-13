@@ -14,6 +14,7 @@ import (
 	"github.com/bamdadam/Minefield-Scavenger/internal/player"
 	stor "github.com/bamdadam/Minefield-Scavenger/internal/store/psql"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -22,6 +23,12 @@ func main() {
 	app := fiber.New(fiber.Config{
 		IdleTimeout: 30 * time.Second,
 	})
+	// app.Use(cors.New(cors.Config{
+	// 	AllowOrigins: "127.0.0.1:5500",
+	// 	AllowHeaders: "Origin, Content-Type, Accept",
+	// 	AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
+	// }))
+	app.Use(cors.New())
 	go func() {
 		<-exitCh
 		app.ShutdownWithTimeout(30 * time.Second)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bamdadam/Minefield-Scavenger/internal/http/handler/response"
 	"github.com/bamdadam/Minefield-Scavenger/internal/http/middleware"
 	"github.com/bamdadam/Minefield-Scavenger/internal/http/request"
 	"github.com/bamdadam/Minefield-Scavenger/internal/model"
@@ -31,28 +32,63 @@ func (p *PlayerHandler) login(ctx *fiber.Ctx) error {
 	body := request.LoginRequest{}
 	err := ctx.BodyParser(&body)
 	if err != nil {
-		fmt.Println(err)
-		return ctx.SendStatus(fiber.StatusBadRequest)
+		return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
 	}
 	fmt.Println(body)
 	var user *model.UserModel
+	var gameModel *model.GameModel
 	user, err = p.db.GetUser(ctx.Context(), body.Username)
 	if err != nil {
 		fmt.Println(err)
 		if errors.Is(err, pgx.ErrNoRows) {
-			user, err = p.db.CreateUser(ctx.Context(), body.Username)
+			usr, err := createNewUserModel(body.Username, 0, body.Points, body.OpeningCost, body.OpeningCost, body.BombOpeningCost)
+			if err != nil {
+				return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
+			}
+			user, err = p.db.CreateUser(ctx.Context(), *usr)
 			if err != nil {
 				fmt.Println(err)
-				return ctx.Status(fiber.ErrBadRequest.Code).JSON(err)
+				return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
+			}
+			// create and save a new game model for the new user
+			fieldLen := 10
+			bombPercent := 60
+			keyShards := 5
+			gm, err := createNewGameModel(fieldLen, bombPercent, keyShards, user.Id)
+			gameModel, err = p.db.CreateNewGame(ctx.Context(), *gm)
+			if err != nil {
+				return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 			}
 		} else {
-			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err)
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
+	} else {
+		gameModel, err = p.db.RetrieveTodaysGame(ctx.Context(), user.Id)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				// create and save a new game model for the user
+				fieldLen := 10
+				bombPercent := 60
+				keyShards := 5
+				gm, err := createNewGameModel(fieldLen, bombPercent, keyShards, user.Id)
+				gameModel, err = p.db.CreateNewGame(ctx.Context(), *gm)
+				if err != nil {
+					return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+				}
+			} else {
+				return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+			}
 		}
 	}
 	fmt.Println(user)
-	t, exp, err := createJWTToken(user.Id, "test")
+	fmt.Println(gameModel)
+	t, exp, err := createJWTToken(user.Id, user.Username, "test")
 	if err != nil {
-		return ctx.SendStatus(fiber.StatusInternalServerError)
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+	}
+	_, err = p.playerCache.SetPlayer(user, gameModel)
+	if err != nil {
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 	}
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"token": t,
@@ -66,21 +102,107 @@ func (p *PlayerHandler) playTurn(ctx *fiber.Ctx) error {
 	token := ctx.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	uID := claims["user_id"].(float64)
-	player, err := p.playerCache.GetPlayer(int(uID))
+	username := claims["username"].(string)
+	plyr, err := p.playerCache.GetPlayer(int(uID))
 	if err != nil {
-		fmt.Println(err)
-		ctx.SendStatus(fiber.StatusInternalServerError)
+		var user *model.UserModel
+		var gameModel *model.GameModel
+		user, err = p.db.GetUser(ctx.Context(), username)
+		if err != nil {
+			fmt.Println("expected to find user but did not: ", err)
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		} else {
+			gameModel, err = p.db.RetrieveTodaysGame(ctx.Context(), user.Id)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					// create and save a new game model for the user
+					fieldLen := 10
+					bombPercent := 60
+					keyShards := 5
+					gm, err := createNewGameModel(fieldLen, bombPercent, keyShards, user.Id)
+					gameModel, err = p.db.CreateNewGame(ctx.Context(), *gm)
+					if err != nil {
+						return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+					}
+				} else {
+					fmt.Println("could not create game: ", err)
+					return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+				}
+			}
+		}
+		fmt.Println(user)
+		fmt.Println(gameModel)
+		plyr, err = p.playerCache.SetPlayer(user, gameModel)
+		if err != nil {
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
 	}
-	fmt.Printf("points at: %p\n", player.ActiveGame)
-	_, err = player.MakeMove(body.X, body.Y)
+	fmt.Printf("points at: %p\n", plyr.ActiveGame)
+	err = plyr.MakeMove(body.X, body.Y)
 	if err != nil {
 		return ctx.SendStatus(fiber.StatusBadRequest)
 	}
-	fmt.Println(player.ShowGameState())
-	return ctx.Status(http.StatusOK).JSON(player.ShowGameState())
+	// save player
+	err = p.db.UpdateUser(ctx.Context(), plyr.NumberOfKeys, plyr.PointsLeft, plyr.NextMoveCost)
+	if err != nil {
+		fmt.Println("error in updating user: ", err)
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+	}
+	// save game
+	err = p.db.UpdateGame(ctx.Context(), plyr.ActiveGame.GameId, *plyr.ActiveGame.GameBoard, *plyr.ActiveGame.Seen)
+	if err != nil {
+		fmt.Println("error in updating game: ", err)
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+	}
+	gameState := plyr.ShowGameState()
+	res := response.PlayGameResponse{
+		ActiveGame:     gameState,
+		Username:       plyr.Username,
+		NumOfKeys:      plyr.NumberOfKeys,
+		PointsLeft:     plyr.PointsLeft,
+		NextMoveCost:   plyr.NextMoveCost,
+		NormalMoveCost: plyr.NormalMoveCost,
+		BombMoveCost:   plyr.BombMoveCost,
+	}
+	return ctx.Status(http.StatusOK).JSON(res)
+}
+
+func (p *PlayerHandler) getUserData(ctx *fiber.Ctx) error {
+	token := ctx.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	uID := claims["user_id"].(float64)
+	username := claims["username"].(string)
+	plyr, err := p.playerCache.GetPlayer(int(uID))
+	if err != nil {
+		var user *model.UserModel
+		user, err = p.db.GetUser(ctx.Context(), username)
+		if err != nil {
+			fmt.Println("expected to find user but did not: ", err)
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
+		res := response.GetUserDataResponse{
+			Username:       user.Username,
+			NumOfKeys:      user.NumOfKeys,
+			PointsLeft:     user.PointsLeft,
+			NextMoveCost:   user.NextMoveCost,
+			NormalMoveCost: user.NormalMoveCost,
+			BombMoveCost:   user.BombMoveCost,
+		}
+		return ctx.Status(http.StatusOK).JSON(res)
+	}
+	res := response.GetUserDataResponse{
+		Username:       plyr.Username,
+		NumOfKeys:      plyr.NumberOfKeys,
+		PointsLeft:     plyr.PointsLeft,
+		NextMoveCost:   plyr.NextMoveCost,
+		NormalMoveCost: plyr.NormalMoveCost,
+		BombMoveCost:   plyr.BombMoveCost,
+	}
+	return ctx.Status(http.StatusOK).JSON(res)
 }
 
 func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/play", middleware.Protected("test"), p.playTurn)
 	g.Post("/login", p.login)
+	g.Get("/data", middleware.Protected("test"), p.getUserData)
 }

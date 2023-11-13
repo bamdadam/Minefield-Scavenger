@@ -1,26 +1,26 @@
 package game
 
 import (
-	"crypto/rand"
 	"errors"
 	"math"
-	"math/big"
 )
 
-func convertBoard(b []int8, bLen int) (*Board, error) {
-	if bLen*bLen != len(b) {
-		return nil, errors.New("board should be equal to bLen*bLen")
-	}
-	br := make(Board, bLen)
-	for i := 0; i < bLen; i++ {
-		br[i] = make([]int8, bLen)
-	}
-	for i, v := range b {
-		row := int(math.Floor(float64(i / bLen)))
-		col := i % bLen
-		br[row][col] = v
-	}
-	return &br, nil
+func convertBoard(b [][]int8) (*Board, error) {
+	// if bLen*bLen != len(b) {
+	// 	return nil, errors.New("board should be equal to bLen*bLen")
+	// }
+	// br := make(Board, bLen)
+	// for i := 0; i < bLen; i++ {
+	// 	br[i] = make([]int8, bLen)
+	// }
+	// for i, v := range b {
+	// 	row := int(math.Floor(float64(i / bLen)))
+	// 	col := i % bLen
+	// 	br[row][col] = v
+	// }
+	// return &br, nil
+	board := Board(b)
+	return &board, nil
 }
 
 func converSeenBoard(s []bool, bLen int) (*Seen, error) {
@@ -39,35 +39,26 @@ func converSeenBoard(s []bool, bLen int) (*Seen, error) {
 	return &sr, nil
 }
 
-func createBoard(bLen, bombPercent, numKeyShards int) (*Board, error) {
-	br := make(Board, bLen)
-	for i := 0; i < bLen; i++ {
-		br[i] = make([]int8, bLen)
+func isBoardAndSeenEqual(board [][]int8, seen [][]bool) bool {
+	if len(board) != len(seen) {
+		return false
 	}
-	numBombs := bLen * bLen * bombPercent / 100
-	for numBombs > 0 {
-		rn, err := rand.Int(rand.Reader, big.NewInt(int64(bLen*bLen)))
-		if err != nil {
-			return nil, err
-		}
-		row := int(math.Floor(float64(rn.Int64() / int64(bLen))))
-		col := rn.Int64() % int64(bLen)
-		if br[row][col] != int8(bomb) {
-			numBombs--
-			br[row][col] = int8(bomb)
+	for i := 0; i < len(board); i++ {
+		if len(board[i]) != len(seen[i]) {
+			return false
 		}
 	}
-	for numKeyShards > 0 {
-		rn, err := rand.Int(rand.Reader, big.NewInt(int64(bLen*bLen)))
-		if err != nil {
-			return nil, err
-		}
-		row := int(math.Floor(float64(rn.Int64() / int64(bLen))))
-		col := rn.Int64() % int64(bLen)
-		if br[row][col] != int8(bomb) && br[row][col] != int8(keyShard) {
-			numKeyShards--
-			br[row][col] = int8(keyShard)
+	return true
+}
+
+func calcSeenCounter(s Seen) int {
+	counter := 0
+	for _, v := range s {
+		for _, iv := range v {
+			if iv {
+				counter++
+			}
 		}
 	}
-	return &br, nil
+	return counter
 }

@@ -3,31 +3,42 @@ package psql
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/bamdadam/Minefield-Scavenger/internal/game"
 	"github.com/bamdadam/Minefield-Scavenger/internal/model"
 	"github.com/georgysavva/scany/v2/pgxscan"
 )
 
-func (p *PSQLStore) CreateNewGame(ctx context.Context, keyShards, fieldLen, bombPercent, playerId int, board game.Board, seen game.Seen) (int, error) {
-	bJson, err := json.Marshal(board)
+func (p *PSQLStore) CreateNewGame(ctx context.Context, g model.GameModel) (*model.GameModel, error) {
+	bJson, err := json.Marshal(g.Board)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	sJson, err := json.Marshal(seen)
+	sJson, err := json.Marshal(g.Seen)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	id := new(int)
+	gm := new(model.GameModel)
+	boardJson := new([]byte)
+	seenJson := new([]byte)
 	err = p.DB.QueryRow(ctx,
 		`INSERT INTO games 
 			(key_shards, field_len, bomb_percent, player_id, board, seen)
 		VALUES 
 			($1, $2, $3, $4, $5, $6)
-		RETURNING id`,
-		keyShards, fieldLen, bombPercent, playerId, bJson, sJson).Scan(id)
-	return *id, err
+		RETURNING id, player_id, key_shards, field_len, bomb_percent, board, seen, created_at`,
+		g.KeyShards, g.FieldLen, g.BombPercent, g.PlayerId, bJson, sJson).Scan(
+		&gm.GameId, &gm.PlayerId, &gm.KeyShards, &gm.FieldLen, &gm.BombPercent, boardJson, seenJson, &gm.CreatedAt,
+	)
+	err = json.Unmarshal(*boardJson, &gm.Board)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(*seenJson, &gm.Seen)
+	if err != nil {
+		return nil, err
+	}
+	return gm, err
 }
 
 func (p *PSQLStore) UpdateGame(ctx context.Context, gameId int, board game.Board, seen game.Seen) error {
@@ -41,17 +52,27 @@ func (p *PSQLStore) UpdateGame(ctx context.Context, gameId int, board game.Board
 	}
 	_, err = p.DB.Exec(ctx,
 		`UPDATE games SET
-		(board, seen) = ($1, $2)
-	WHERE id = $3`,
-		bJson, sJson)
+			(board, seen) = ($1, $2)
+		WHERE id = $3`,
+		bJson, sJson, gameId)
 	return err
 }
 
-func (p *PSQLStore) RetrieveGame(ctx context.Context, playerId int, date time.Time) (*model.GameModel, error) {
+func (p *PSQLStore) RetrieveLastNGame(ctx context.Context, playerId, n int) ([]*model.GameModel, error) {
+	m := make([]*model.GameModel, n)
+	err := pgxscan.Select(ctx, p.DB, m,
+		`SELECT TOP $1 * FROM games
+		WHERE player_id = $2
+		SORTED BY created_at
+		`, n, playerId)
+	return m, err
+}
+
+func (p *PSQLStore) RetrieveTodaysGame(ctx context.Context, playerId int) (*model.GameModel, error) {
 	m := new(model.GameModel)
 	err := pgxscan.Get(ctx, p.DB, m,
 		`SELECT * FROM games
-		WHERE player_id = $1 and created_at = $2`,
-		playerId, date)
+		WHERE player_id = $1 and created_at::date = current_date
+		`, playerId)
 	return m, err
 }
