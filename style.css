@@ -1,0 +1,97 @@
+/* style.css */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#login-form {
+    margin: auto;
+    width: 300px;
+    padding: 20px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+}
+
+#minefield {
+    display: grid;
+    width: 700px;
+    /* Fixed width for the minefield */
+    height: 700px;
+    /* Fixed height for the minefield */
+    grid-gap: 2px;
+    /* Adjust the gap size as needed */
+    margin: auto;
+    /* Center the minefield on the page */
+}
+
+.cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #5b5b5b;
+    /*Optional border for cells */
+    background-size: contain;
+    /* Or use 'cover' or set a specific size */
+    background-position: center;
+    /* Centers the image in the cell */
+    background-repeat: no-repeat;
+    /* Prevents the image from repeating */
+    /* background-color: rgb(180, 160, 116); Optional background color for cells */
+    cursor: pointer;
+}
+
+#player-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    /* Semi-transparent background */
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    /* Ensures it's on top of other elements */
+}
+
+#player-username {
+    font-weight: bold;
+}
+
+#user-info {
+    background-color: #f3f3f3;
+    /* Light grey background */
+    border: 1px solid #ddd;
+    /* Light grey border */
+    border-radius: 4px;
+    /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow */
+    text-align: right;
+}
+
+#restart-area {
+    display: flex; /* Use flexbox layout */
+    flex-direction: column; /* Stack children vertically */
+    position: fixed; /* Fixed position relative to the viewport */
+    left: 10px; /* 10px from the left edge of the viewport */
+    top: 50%; /* At the vertical center of the viewport */
+    transform: translateY(-50%); /* Offset the container by half its height to center it */
+    z-index: 10; /* Ensure it's on top of other elements */
+}
+
+#win-message-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: green;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-size: 24px;
+    z-index: 1000;
+}

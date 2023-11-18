@@ -41,7 +41,7 @@ func (p *PSQLStore) CreateNewGame(ctx context.Context, g model.GameModel) (*mode
 	return gm, err
 }
 
-func (p *PSQLStore) UpdateGame(ctx context.Context, gameId int, board game.Board, seen game.Seen) error {
+func (p *PSQLStore) UpdateGame(ctx context.Context, gameId, keyShards, bombPercent, fieldLen int, board game.Board, seen game.Seen) error {
 	bJson, err := json.Marshal(board)
 	if err != nil {
 		return err
@@ -52,18 +52,19 @@ func (p *PSQLStore) UpdateGame(ctx context.Context, gameId int, board game.Board
 	}
 	_, err = p.DB.Exec(ctx,
 		`UPDATE games SET
-			(board, seen) = ($1, $2)
-		WHERE id = $3`,
-		bJson, sJson, gameId)
+			(key_shards, field_len, bomb_percent, board, seen) = ($1, $2, $3, $4, $5)
+		WHERE id = $6`,
+		keyShards, fieldLen, bombPercent, bJson, sJson, gameId)
 	return err
 }
 
 func (p *PSQLStore) RetrieveLastNGame(ctx context.Context, playerId, n int) ([]*model.GameModel, error) {
 	m := make([]*model.GameModel, n)
 	err := pgxscan.Select(ctx, p.DB, m,
-		`SELECT TOP $1 * FROM games
+		`SELECT * FROM games
 		WHERE player_id = $2
-		SORTED BY created_at
+		ORDER BY created_at
+		LIMIT $1
 		`, n, playerId)
 	return m, err
 }
@@ -73,6 +74,8 @@ func (p *PSQLStore) RetrieveTodaysGame(ctx context.Context, playerId int) (*mode
 	err := pgxscan.Get(ctx, p.DB, m,
 		`SELECT * FROM games
 		WHERE player_id = $1 and created_at::date = current_date
+		ORDER BY created_at
+		LIMIT 1
 		`, playerId)
 	return m, err
 }

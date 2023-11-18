@@ -39,8 +39,11 @@ func (p *Player) MakeMove(x, y int) error {
 	switch cell {
 	case int8(game.Bomb):
 		p.NextMoveCost = p.BombMoveCost
-	case int8(game.Empty), int8(game.KeyShard):
+	case int8(game.Empty):
 		p.NextMoveCost = p.NormalMoveCost
+	case int8(game.KeyShard):
+		p.NextMoveCost = p.NormalMoveCost
+		p.NumberOfKeys++
 	}
 	return nil
 }

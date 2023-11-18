@@ -26,10 +26,11 @@ func (p *PSQLStore) CreateUser(ctx context.Context, user model.UserModel) (*mode
 	return u, err
 }
 
-func (p *PSQLStore) UpdateUser(ctx context.Context, numberOfKeys, PointsLeft, NextMoveCost int) error {
+func (p *PSQLStore) UpdateUser(ctx context.Context, uID, numberOfKeys, PointsLeft, NextMoveCost, NormalMoveCost, BombMoveCost int) error {
 	_, err := p.DB.Exec(ctx, `
 		UPDATE users SET 
-			(number_of_keys, points_left, next_move_cost) = ($1, $2, $3)
-	`, numberOfKeys, PointsLeft, NextMoveCost)
+			(number_of_keys, points_left, next_move_cost, normal_move_cost, bomb_move_cost) = ($1, $2, $3, $4, $5)
+		WHERE id = $6
+	`, numberOfKeys, PointsLeft, NextMoveCost, NormalMoveCost, BombMoveCost, uID)
 	return err
 }

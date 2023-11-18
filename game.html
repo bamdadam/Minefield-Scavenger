@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minefield</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>Minefield Scavenger</h1>
+    <div id="minefield"></div>
+    <div id="game-info" style="position: absolute; top: 0; right: 0; padding: 10px;">
+        <div id="username-display">Username: <span id="username"></span></div>
+        <div id="points-display">Points Left: <span id="points-left"></span></div>
+        <div id="keys-display">Number of Keys: <span id="num-of-keys"></span></div>
+        <div id="keys-display">Next Move Cost: <span id="next-move-cost"></span></div>
+        <div id="keys-display">Normal Move Cost: <span id="normal-move-cost"></span></div>
+        <div id="keys-display">Bomb Move Cost: <span id="bomb-move-cost"></span></div>
+    </div>
+    <div id="game-grid">
+      </div>
+      <div id="restart-area">
+        <button id="restart-button">Restart Game</button>
+        <input type="number" id="top-up-points" placeholder="Top Up Points" />
+        <input type="number" id="opening-cost" placeholder="Opening Cost" />
+        <input type="number" id="bomb-opening-cost" placeholder="Bomb Opening Cost" />
+        <input type="number" id="field-len" placeholder="Field Length" />
+        <input type="number" id="bomb-percentage" placeholder="Bomb Percentage" />
+        <input type="number" id="number-of-keys" placeholder="Number of Keys" />
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

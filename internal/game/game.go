@@ -140,6 +140,9 @@ func (g *Game) MakeMove(row, col int) (int8, error) {
 }
 
 func LoadGame(g *model.GameModel) (*Game, error) {
+	if g == nil {
+		return nil, errors.New("model is nil")
+	}
 	if g.KeyShards >= g.FieldLen*g.FieldLen {
 		return nil, errors.New("(fieldLength)^2 should at least be bigger than number of key shards")
 	}
