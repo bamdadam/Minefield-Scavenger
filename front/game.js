@@ -103,7 +103,7 @@ function displayUserInfo(data) {
     document.getElementById('username').textContent = data.username;
     document.getElementById('points-left').textContent = data.points_left;
     document.getElementById('num-of-keys').textContent = data.number_of_keys;
-    document.getElementById('next-move-cost').textContent = data.next_move_cost;
+    // document.getElementById('next-move-cost').textContent = data.next_move_cost;
     document.getElementById('normal-move-cost').textContent = data.normal_move_cost;
     document.getElementById('bomb-move-cost').textContent = data.bomb_move_cost;
     // Update other elements for NextMoveCost, NormalMoveCost, and BombMoveCost if necessary
