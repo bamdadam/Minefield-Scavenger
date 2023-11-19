@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function fetchGameState() {
-    fetch('http://127.0.0.1:8080/player/data', {
+    fetch('https://minefield.onrender.com/player/data', {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('jwtToken') // Use the stored JWT token
@@ -130,7 +130,7 @@ function cellClicked(event) {
     // Confirm with the player
     if (confirm('Do you want to pay to open this cell?')) {
         // Send POST request to server
-        fetch('http://127.0.0.1:8080/player/play', {
+        fetch('https://minefield.onrender.com/player/play', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -171,6 +171,10 @@ function cellClicked(event) {
                     // Handle updating the cell based on the response
                     displayUserInfo(data); // Display user info
                     updateGameState(data.game_state);
+                    if (data.number_of_keys === 5) {
+                        displayWinMessage();
+                        disableAllCells();
+                    }
                 }
             })
             .catch(error => {
@@ -180,7 +184,7 @@ function cellClicked(event) {
 }
 
 function loseGame() {
-    fetch('http://127.0.0.1:8080/player/lose', {
+    fetch('https://minefield.onrender.com/player/lose', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('jwtToken'),
@@ -188,16 +192,16 @@ function loseGame() {
         }
         // Include any additional required body data for your POST request
     })
-    .then(response => {
-        if (response.ok) {
-            fetchGameState(); // Fetch the game state again to reset the game
-        } else {
-            console.error('Error: Failed to update game loss status');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+        .then(response => {
+            if (response.ok) {
+                fetchGameState(); // Fetch the game state again to reset the game
+            } else {
+                console.error('Error: Failed to update game loss status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
 }
 
 function updateGameState(gameState) {
@@ -278,7 +282,7 @@ document.getElementById('restart-button').addEventListener('click', function () 
     };
 
     // Replace with the actual URL of your backend endpoint
-    fetch('http://127.0.0.1:8080/player/restart', {
+    fetch('https://minefield.onrender.com/player/restart', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('jwtToken'),

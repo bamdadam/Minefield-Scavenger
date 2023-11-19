@@ -17,7 +17,7 @@ function login() {
     }));
 
     // The rest of your fetch logic remains the same
-    fetch('http://127.0.0.1:8080/player/login', {
+    fetch('https://minefield.onrender.com/player/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
