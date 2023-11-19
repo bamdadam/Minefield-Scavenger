@@ -188,6 +188,7 @@ func (p *PlayerHandler) LoseGame(ctx *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	uID := claims["user_id"].(float64)
 	username := claims["username"].(string)
+	var oldGame *game.Game
 	plyr, err := p.playerCache.GetPlayer(int(uID))
 	if err != nil {
 		var user *model.UserModel
@@ -213,6 +214,10 @@ func (p *PlayerHandler) LoseGame(ctx *fiber.Ctx) error {
 					return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 				}
 			} else {
+				oldGame, err = game.LoadGame(gameModel)
+				if err != nil {
+					return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+				}
 				gm, err := createNewGameModel(
 					gameModel.FieldLen,
 					gameModel.BombPercent,
@@ -254,6 +259,7 @@ func (p *PlayerHandler) LoseGame(ctx *fiber.Ctx) error {
 			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 		}
 	} else {
+		oldGame = plyr.ActiveGame
 		gm, err := createNewGameModel(
 			plyr.ActiveGame.FieldLen,
 			plyr.ActiveGame.BombPercent,
@@ -289,7 +295,7 @@ func (p *PlayerHandler) LoseGame(ctx *fiber.Ctx) error {
 			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 		}
 	}
-	gameState := plyr.ShowGameState()
+	gameState := oldGame.ShowStateOnLose()
 	res := response.PlayGameResponse{
 		ActiveGame:     gameState,
 		Username:       plyr.Username,

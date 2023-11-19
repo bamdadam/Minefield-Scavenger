@@ -73,7 +73,7 @@ func (p *PSQLStore) RetrieveTodaysGame(ctx context.Context, playerId int) (*mode
 	m := new(model.GameModel)
 	err := pgxscan.Get(ctx, p.DB, m,
 		`SELECT * FROM games
-		WHERE player_id = $1 and created_at::date = current_date
+		WHERE player_id = $1
 		ORDER BY created_at
 		LIMIT 1
 		`, playerId)

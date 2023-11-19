@@ -112,6 +112,35 @@ func (g *Game) ShowState() *CompactGameModel {
 	}
 }
 
+func (g *Game) ShowStateOnLose() *CompactGameModel {
+	var bombs, keys, seenEmpty, notSeen []int16
+	for i, value := range *g.Seen {
+		for j := range value {
+			idx := i*g.FieldLen + j
+			switch (*g.GameBoard)[i][j] {
+			case int8(Bomb):
+				bombs = append(bombs, int16(idx))
+			case int8(KeyShard):
+				keys = append(keys, int16(idx))
+			case int8(Empty):
+				seenEmpty = append(seenEmpty, int16(idx))
+			}
+		}
+	}
+	def := true
+
+	return &CompactGameModel{
+		KeyShards:        g.NumKeyShards,
+		FieldLen:         g.FieldLen,
+		BombPercent:      g.BombPercent,
+		Bombs:            bombs,
+		Keys:             keys,
+		Empty:            seenEmpty,
+		NotSeen:          notSeen,
+		IsDefaultNotSeen: def,
+	}
+}
+
 // func NewGame(g *model.GameModel) (*Game, error) {
 // 	if g.KeyShards >= g.FieldLen*g.FieldLen {
 // 		return nil, errors.New("(fieldLength)^2 should at least be bigger than number of key shards")
