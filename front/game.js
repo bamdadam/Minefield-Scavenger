@@ -192,17 +192,29 @@ function loseGame() {
         }
         // Include any additional required body data for your POST request
     })
-        .then(response => {
-            if (response.ok) {
-                fetchGameState(); // Fetch the game state again to reset the game
-            } else {
-                console.error('Error: Failed to update game loss status');
-            }
-        })
+        .then(response => response.json()
+            .then(data => {
+                if (response.ok) {
+                    displayUserInfo(data); // Display user info
+                    initializeGrid(data.game_state); // Initialize the game grid
+                    disableAllCells();
+                } else {
+                    console.error('Error: Failed to update game loss status');
+                }
+            }))
         .catch(error => {
             console.error('Error:', error);
         });
 }
+
+// .then(response => response.json())
+// .then(data => {
+//     displayUserInfo(data); // Display user info
+//     initializeGrid(data.game_state); // Initialize the game grid
+// })
+// .catch(error => {
+//     console.error('Error:', error);
+// });
 
 function updateGameState(gameState) {
     // Call your existing initializeGrid function to re-create the grid with the new game state
