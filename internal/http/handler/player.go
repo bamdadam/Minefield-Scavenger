@@ -467,10 +467,64 @@ func (p *PlayerHandler) RestartGame(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(fiber.StatusOK)
 }
 
+func (p *PlayerHandler) payForBomb(ctx *fiber.Ctx) error {
+	body := new(request.PlayRequest)
+	err := ctx.BodyParser(body)
+	token := ctx.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	uID := claims["user_id"].(float64)
+	username := claims["username"].(string)
+	plyr, err := p.playerCache.GetPlayer(int(uID))
+	if err != nil {
+		var user *model.UserModel
+		var gameModel *model.GameModel
+		user, err = p.db.GetUser(ctx.Context(), username)
+		if err != nil {
+			fmt.Println("expected to find user but did not: ", err)
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		} else {
+			gameModel, err = p.db.RetrieveTodaysGame(ctx.Context(), user.Id)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return ctx.Status(fiber.ErrInternalServerError.Code).JSON("please login again")
+				} else {
+					fmt.Println("could not create game: ", err)
+					return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+				}
+			}
+		}
+		fmt.Println(user)
+		fmt.Println(gameModel)
+		plyr, err = p.playerCache.SetPlayer(user, gameModel)
+		if err != nil {
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
+	}
+	plyr.PointsLeft -= plyr.BombMoveCost
+	// save player
+	err = p.db.UpdateUser(ctx.Context(), int(uID), plyr.NumberOfKeys, plyr.PointsLeft, plyr.NextMoveCost, plyr.NormalMoveCost, plyr.BombMoveCost)
+	if err != nil {
+		fmt.Println("error in updating user: ", err)
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+	}
+	gameState := plyr.ShowGameState()
+	res := response.PlayGameResponse{
+		ActiveGame:     gameState,
+		Username:       plyr.Username,
+		NumOfKeys:      plyr.NumberOfKeys,
+		PointsLeft:     plyr.PointsLeft,
+		NextMoveCost:   plyr.NextMoveCost,
+		NormalMoveCost: plyr.NormalMoveCost,
+		BombMoveCost:   plyr.BombMoveCost,
+	}
+	return ctx.Status(http.StatusOK).JSON(res)
+}
+
 func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/play", middleware.Protected("test"), p.playTurn)
 	g.Post("/login", p.login)
 	g.Get("/data", middleware.Protected("test"), p.getUserData)
 	g.Post("/restart", middleware.Protected("test"), p.RestartGame)
 	g.Post("/lose", middleware.Protected("test"), p.LoseGame)
+	g.Post("/play/bomb", middleware.Protected("test"), p.payForBomb)
 }

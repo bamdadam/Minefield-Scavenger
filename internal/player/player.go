@@ -35,7 +35,7 @@ func (p *Player) MakeMove(x, y int) error {
 	if err != nil {
 		return err
 	}
-	p.PointsLeft -= p.NextMoveCost
+	p.PointsLeft -= p.NormalMoveCost
 	switch cell {
 	case int8(game.Bomb):
 		p.NextMoveCost = p.BombMoveCost
