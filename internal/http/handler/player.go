@@ -579,12 +579,10 @@ func (p *PlayerHandler) playRockPaperScissor(ctx *fiber.Ctx) error {
 	}
 	err = p.db.SaveRPSGame(ctx.Context(), body.PlayerChoice, houseChoice, user.Id, hasWon)
 	if err != nil {
-		fmt.Println("tt")
 		return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
 	}
 	err = p.db.UpdateRPSUser(ctx.Context(), user.Id, user.PointsLeft)
 	if err != nil {
-		fmt.Println("tts")
 		return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
 	}
 	res := response.PlayRPSResponse{
