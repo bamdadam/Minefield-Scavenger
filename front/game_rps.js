@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log(requestData);
 
             // Post request to the server
-            fetch('http://127.0.0.1:8080/player/play/rps/', {
+            fetch('https://minefield.onrender.com/player/play/rps/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ function updateUserData(userData) {
 
 // Function to query the backend for user data
 function fetchUserData() {
-    fetch('http://127.0.0.1:8080/player/data/rps/', {
+    fetch('https://minefield.onrender.com/player/data/rps/', {
         method: 'GET', // or 'POST' if required
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('jwtToken'),
