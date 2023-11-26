@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 
 	"github.com/bamdadam/Minefield-Scavenger/internal/game"
@@ -520,6 +522,114 @@ func (p *PlayerHandler) payForBomb(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(res)
 }
 
+func (p *PlayerHandler) playRockPaperScissor(ctx *fiber.Ctx) error {
+	body := request.PlayRPSRequest{}
+	err := ctx.BodyParser(&body)
+	if err != nil {
+		return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
+	}
+	token := ctx.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	var user *model.RPSUserModel
+	houseChoice := 0
+	hasWon := false
+	user, err = p.db.GetRPSUser(ctx.Context(), username)
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON("something went wrong should have had user: " + err.Error())
+	}
+	if body.GameVersion == 1 {
+		choices := []int{0, 1, 2} // Rock, Paper, Scissors
+		choices = append(choices[:body.PlayerChoice], choices[body.PlayerChoice+1:]...)
+		randNum, err := (rand.Int(rand.Reader, big.NewInt(2)))
+		if err != nil {
+			return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
+		}
+		houseChoice = choices[int(randNum.Int64())]
+		// player has won
+		if (body.PlayerChoice == 0 && houseChoice == 2) ||
+			(body.PlayerChoice == 1 && houseChoice == 0) ||
+			(body.PlayerChoice == 2 && houseChoice == 1) {
+			user.PointsLeft += body.PlayerBet
+			hasWon = true
+		} else {
+			user.PointsLeft -= body.PlayerBet
+		}
+	} else {
+		choices := []int{0, 1, 2} // Rock, Paper, Scissors
+		randNum, err := (rand.Int(rand.Reader, big.NewInt(3)))
+		if err != nil {
+			return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
+		}
+		houseChoice = choices[int(randNum.Int64())]
+		if (body.PlayerChoice == 0 && houseChoice == 2) ||
+			(body.PlayerChoice == 1 && houseChoice == 0) ||
+			(body.PlayerChoice == 2 && houseChoice == 1) {
+			// player has won
+			user.PointsLeft += int(float64(body.PlayerBet) * 1.3)
+			hasWon = true
+		} else if (body.PlayerChoice == 0 && houseChoice == 0) ||
+			(body.PlayerChoice == 1 && houseChoice == 1) ||
+			(body.PlayerChoice == 2 && houseChoice == 2) {
+			// draw
+			user.PointsLeft -= (body.PlayerBet / 2)
+		} else {
+			user.PointsLeft -= body.PlayerBet
+		}
+	}
+	err = p.db.SaveRPSGame(ctx.Context(), body.PlayerChoice, houseChoice, user.Id, hasWon)
+	if err != nil {
+		fmt.Println("tt")
+		return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
+	}
+	err = p.db.UpdateRPSUser(ctx.Context(), user.Id, user.PointsLeft)
+	if err != nil {
+		fmt.Println("tts")
+		return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
+	}
+	res := response.PlayRPSResponse{
+		EnemyChoice: houseChoice,
+		UserChoice:  body.PlayerChoice,
+		Username:    username,
+		PointsLeft:  user.PointsLeft,
+		HasWon:      hasWon,
+		GameVersion: body.GameVersion,
+	}
+	return ctx.Status(http.StatusOK).JSON(res)
+}
+
+func (p *PlayerHandler) loginRPS(ctx *fiber.Ctx) error {
+	body := request.LoginRPSRequest{}
+	err := ctx.BodyParser(&body)
+	if err != nil {
+		return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
+	}
+	fmt.Println(body)
+	var user *model.RPSUserModel
+	user, err = p.db.GetRPSUser(ctx.Context(), body.Username)
+	if err != nil {
+		fmt.Println(err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			user, err = p.db.CreateRPSUser(ctx.Context(), body.Username, body.Points)
+			if err != nil {
+				fmt.Println(err)
+				return ctx.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
+			}
+		} else {
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
+	}
+	fmt.Println(user)
+	t, exp, err := createJWTToken(user.Id, user.Username, "test-2")
+	if err != nil {
+		return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+	}
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{
+		"token": t,
+		"exp":   exp,
+	})
+}
+
 func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/play", middleware.Protected("test"), p.playTurn)
 	g.Post("/login", p.login)
@@ -527,4 +637,7 @@ func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/restart", middleware.Protected("test"), p.RestartGame)
 	g.Post("/lose", middleware.Protected("test"), p.LoseGame)
 	g.Post("/play/bomb", middleware.Protected("test"), p.payForBomb)
+	g.Post("/play/rps/", middleware.Protected("test-2"), p.playRockPaperScissor)
+	g.Post("/login/rps/", p.loginRPS)
+
 }

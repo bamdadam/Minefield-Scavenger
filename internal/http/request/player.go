@@ -23,3 +23,14 @@ type RestartRequest struct {
 	BombPercent     int `json:"bomb_percentage"`
 	NumOfKeys       int `json:"number_of_keys"`
 }
+
+type LoginRPSRequest struct {
+	Username string `json:"username"`
+	Points   int    `json:"points"`
+}
+
+type PlayRPSRequest struct {
+	PlayerChoice int `json:"player_choice"`
+	PlayerBet    int `json:"player_bet"`
+	GameVersion  int `json:"game_version"`
+}

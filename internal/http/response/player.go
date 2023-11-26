@@ -21,3 +21,12 @@ type PlayGameResponse struct {
 	NormalMoveCost int                    `json:"normal_move_cost"`
 	BombMoveCost   int                    `json:"bomb_move_cost"`
 }
+
+type PlayRPSResponse struct {
+	EnemyChoice int    `json:"enemy_choice"`
+	UserChoice  int    `json:"user_choice"`
+	Username    string `json:"username"`
+	PointsLeft  int    `json:"points_left"`
+	HasWon      bool   `json:"has_won"`
+	GameVersion int    `json:"game_version"`
+}

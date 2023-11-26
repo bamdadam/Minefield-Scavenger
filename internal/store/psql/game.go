@@ -79,3 +79,13 @@ func (p *PSQLStore) RetrieveTodaysGame(ctx context.Context, playerId int) (*mode
 		`, playerId)
 	return m, err
 }
+
+func (p *PSQLStore) SaveRPSGame(ctx context.Context, playerChoice, houseChoice, playerID int, hasWon bool) error {
+	_, err := p.DB.Exec(ctx,
+		`INSERT INTO rps_games 
+			(player_choice, house_choice, has_won, player_id)
+		VALUES 
+			($1, $2, $3, $4)
+		`, playerChoice, houseChoice, hasWon, playerID)
+	return err
+}

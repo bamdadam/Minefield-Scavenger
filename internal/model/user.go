@@ -9,3 +9,9 @@ type UserModel struct {
 	NormalMoveCost int    `db:"normal_move_cost"`
 	BombMoveCost   int    `db:"bomb_move_cost"`
 }
+
+type RPSUserModel struct {
+	Username   string `db:"username"`
+	Id         int    `db:"id"`
+	PointsLeft int    `db:"points_left"`
+}

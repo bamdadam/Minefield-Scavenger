@@ -34,3 +34,31 @@ func (p *PSQLStore) UpdateUser(ctx context.Context, uID, numberOfKeys, PointsLef
 	`, numberOfKeys, PointsLeft, NextMoveCost, NormalMoveCost, BombMoveCost, uID)
 	return err
 }
+
+func (p *PSQLStore) CreateRPSUser(ctx context.Context, username string, numOfPoints int) (*model.RPSUserModel, error) {
+	u := new(model.RPSUserModel)
+	err := p.DB.QueryRow(ctx, `
+		INSERT INTO rps_users (username, points_left) VALUES ($1, $2)
+		ON CONFLICT(username) DO NOTHING
+		RETURNING id, username, points_left
+	`, username, numOfPoints,
+	).Scan(&u.Id, &u.Username, &u.PointsLeft)
+	return u, err
+}
+
+func (p *PSQLStore) GetRPSUser(ctx context.Context, username string) (*model.RPSUserModel, error) {
+	user := new(model.RPSUserModel)
+	err := pgxscan.Get(ctx, p.DB, user, `
+		SELECT * FROM rps_users WHERE username = $1
+	`, username)
+	return user, err
+}
+
+func (p *PSQLStore) UpdateRPSUser(ctx context.Context, uID, PointsLeft int) error {
+	_, err := p.DB.Exec(ctx, `
+		UPDATE rps_users SET 
+			points_left = $1
+		WHERE id = $2
+	`, PointsLeft, uID)
+	return err
+}

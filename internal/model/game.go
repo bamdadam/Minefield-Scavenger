@@ -12,3 +12,9 @@ type GameModel struct {
 	Seen        [][]bool  `db:"seen"`
 	CreatedAt   time.Time `db:"created_at"`
 }
+
+type RPSGameModel struct {
+	PlayerChoice int  `db:"player_choice"`
+	HouseChoice  int  `db:"house_choice"`
+	HasWon       bool `db:"has_won"`
+}

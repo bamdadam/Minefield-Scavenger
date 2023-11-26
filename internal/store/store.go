@@ -17,4 +17,10 @@ type Store interface {
 	CreateUser(ctx context.Context, user model.UserModel) (*model.UserModel, error)
 	GetUser(ctx context.Context, username string) (*model.UserModel, error)
 	UpdateUser(ctx context.Context, uID, numberOfKeys, PointsLeft, NextMoveCost, NormalMoveCost, BombMoveCost int) error
+	// rps
+	SaveRPSGame(ctx context.Context, playerChoice, houseChoice, playerID int, hasWon bool) error
+	// rps user
+	CreateRPSUser(ctx context.Context, username string, numOfPoints int) (*model.RPSUserModel, error)
+	GetRPSUser(ctx context.Context, username string) (*model.RPSUserModel, error)
+	UpdateRPSUser(ctx context.Context, uID, PointsLeft int) error
 }
