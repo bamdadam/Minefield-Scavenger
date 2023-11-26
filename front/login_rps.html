@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Rock Paper Scissors</title>
+    <!-- Add CSS styles as needed -->
+    <link rel="stylesheet" href="rps.css">
+</head>
+
+<body>
+    <h1>Login to Play Rock Paper Scissors</h1>
+    <form id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="points">Points:</label>
+        <input type="number" id="points" name="points" required><br><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        // JavaScript to handle the form submission
+        document.getElementById('loginForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            var username = document.getElementById('username').value;
+            var points = document.getElementById('points').value;
+            // Send request to backend
+            fetch('http://127.0.0.1:8080/player/login/rps/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: username, points: parseInt(points, 10) })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Save the JWT token
+                    localStorage.setItem('jwtToken', data.token);
+                    localStorage.setItem('expirationTime', data.exp);
+                    // Redirect to the game page
+                    window.location.href = 'game_rps.html';
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+</body>
+
+</html>

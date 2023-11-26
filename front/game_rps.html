@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rock Paper Scissors Game</title>
+    <link rel="stylesheet" href="game_rps.css">
+</head>
+<body>
+    <div id="playerInfo" class="player-info">
+        Username: <span id="username">bamdad</span>
+        Points Left: <span id="pointsLeft">100</span>
+    </div>
+
+    <div id="gameArea" class="game-area">
+        <div class="choices-container">
+            <div id="playerChoice" class="choice-placeholder">
+                <span class="placeholder-text"></span>
+                <img src="" alt="Player's Choice" id="playerChoiceImg" />
+            </div>
+            <div id="enemyChoice" class="choice-placeholder">
+                <span class="placeholder-text"></span>
+                <img src="" alt="Enemy's Choice" id="enemyChoiceImg" />
+            </div>
+            
+        </div>
+
+        <div id="choices">
+            <button class="choiceButton" data-choice="0">
+                <div class="image-placeholder" id="playerRock">
+                    <img src="images/rock.png" alt="Rock">
+                </div>
+            </button>
+            <button class="choiceButton" data-choice="1">
+                <div class="image-placeholder" id="playerPaper">
+                    <img src="images/paper.png" alt="Paper">
+                </div>
+            </button>
+            <button class="choiceButton" data-choice="2">
+                <div class="image-placeholder" id="playerScissors">
+                    <img src="images/scissors.png" alt="Scissors">
+                </div>
+            </button>
+        </div>
+
+        <label class="switch">
+            <input type="checkbox" id="gameVersionToggle">
+            <span class="slider round"></span>
+        </label>
+        <span id="gameModeText">Game Mode: 2</span>
+
+        <div class="bet-switch">
+            <input type="radio" id="bet10" name="bet" value="10">
+            <label for="bet10" class="bet-option">10</label>
+            
+            <input type="radio" id="bet20" name="bet" value="20">
+            <label for="bet20" class="bet-option">20</label>
+            
+            <input type="radio" id="bet30" name="bet" value="30">
+            <label for="bet30" class="bet-option">30</label>
+            
+            <input type="radio" id="bet40" name="bet" value="40">
+            <label for="bet40" class="bet-option">40</label>
+            
+            <input type="radio" id="bet50" name="bet" value="50">
+            <label for="bet50" class="bet-option">50</label>
+            
+            <!-- <div class="bet-indicator"></div> -->
+        </div>
+    </div>
+
+    <div id="resultMessage" class="result-message"></div>
+    
+
+    <script src="game_rps.js"></script>
+</body>
+</html>
