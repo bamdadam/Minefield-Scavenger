@@ -161,8 +161,7 @@ function cellClicked(event) {
                     const userWantsToContinue = confirm("You've clicked on a bomb! Do you want to pay " + data.bomb_move_cost + " points to continue?");
                     if (userWantsToContinue) {
                         // User chooses to continue, proceed as normal
-                        displayUserInfo(data); // Display user info
-                        updateGameState(data.game_state);
+                        payForBomb();
                     } else {
                         // User chooses not to continue, send a request to lose the game
                         loseGame();
@@ -207,14 +206,28 @@ function loseGame() {
         });
 }
 
-// .then(response => response.json())
-// .then(data => {
-//     displayUserInfo(data); // Display user info
-//     initializeGrid(data.game_state); // Initialize the game grid
-// })
-// .catch(error => {
-//     console.error('Error:', error);
-// });
+function payForBomb() {
+    fetch('https://minefield.onrender.com/player/play/bomb', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('jwtToken'),
+            'Content-Type': 'application/json'
+        }
+        // Include any additional required body data for your POST request
+    })
+        .then(response => response.json()
+            .then(data => {
+                if (response.ok) {
+                    displayUserInfo(data); // Display user info
+                    initializeGrid(data.game_state); // Initialize the game grid
+                } else {
+                    console.error('Error: Failed to pay for bomb');
+                }
+            }))
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
 
 function updateGameState(gameState) {
     // Call your existing initializeGrid function to re-create the grid with the new game state
