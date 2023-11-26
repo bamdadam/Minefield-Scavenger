@@ -20,7 +20,7 @@ const (
 )
 
 func createJWTToken(userId int, username, secret string) (string, int64, error) {
-	exp := time.Now().Add(time.Hour * 5).Unix()
+	exp := time.Now().Add(time.Hour * 10).Unix()
 	claims := jwt.MapClaims{
 		"user_id":  userId,
 		"username": username,

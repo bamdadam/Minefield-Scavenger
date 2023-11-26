@@ -616,6 +616,11 @@ func (p *PlayerHandler) loginRPS(ctx *fiber.Ctx) error {
 		} else {
 			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
 		}
+	} else {
+		err = p.db.UpdateRPSUser(ctx.Context(), user.Id, body.Points)
+		if err != nil {
+			return ctx.Status(http.StatusInternalServerError).JSON(err.Error())
+		}
 	}
 	fmt.Println(user)
 	t, exp, err := createJWTToken(user.Id, user.Username, "test-2")
@@ -628,6 +633,26 @@ func (p *PlayerHandler) loginRPS(ctx *fiber.Ctx) error {
 	})
 }
 
+func (p *PlayerHandler) getRPSUserData(ctx *fiber.Ctx) error {
+	token := ctx.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	var user *model.RPSUserModel
+	user, err := p.db.GetRPSUser(ctx.Context(), username)
+	if err != nil {
+		fmt.Println(err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ctx.Status(fiber.ErrInternalServerError.Code).JSON(err.Error())
+		}
+	}
+	fmt.Println(user)
+	res := response.GetRPSUserDataResponse{
+		Username:   username,
+		PointsLeft: user.PointsLeft,
+	}
+	return ctx.Status(http.StatusOK).JSON(res)
+}
+
 func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/play", middleware.Protected("test"), p.playTurn)
 	g.Post("/login", p.login)
@@ -636,6 +661,7 @@ func (p *PlayerHandler) RegisterHandlers(g fiber.Router) {
 	g.Post("/lose", middleware.Protected("test"), p.LoseGame)
 	g.Post("/play/bomb", middleware.Protected("test"), p.payForBomb)
 	g.Post("/play/rps/", middleware.Protected("test-2"), p.playRockPaperScissor)
+	g.Get("/data/rps", middleware.Protected("test-2"), p.getRPSUserData)
 	g.Post("/login/rps/", p.loginRPS)
 
 }

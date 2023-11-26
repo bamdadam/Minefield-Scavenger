@@ -30,3 +30,8 @@ type PlayRPSResponse struct {
 	HasWon      bool   `json:"has_won"`
 	GameVersion int    `json:"game_version"`
 }
+
+type GetRPSUserDataResponse struct {
+	Username   string `json:"username"`
+	PointsLeft int    `json:"points_left"`
+}
