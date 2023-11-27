@@ -220,3 +220,15 @@ body {
     background-color: #000000;
     color: white;
 }
+
+.bet-switch-container {
+  /* display: flex; */
+  align-items: center; /* This will vertically align the label with the switch */
+  margin-top: 20px; /* Adjust as needed */
+}
+
+.bet-label {
+  margin-right: 10px; /* Adds some space between the label and the switch */
+  font-weight: bold; /* Optional: makes the text bold */
+  /* Add any additional styling you need for the label */
+}

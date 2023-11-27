@@ -91,7 +91,7 @@ function setImageChoice(choiceElementId, choice) {
 
 function clearImageChoice(choiceElementId) {
     const imgElement = document.getElementById(choiceElementId);
-    imgElement.src = '';
+    imgElement.src = 'images/Empty.png';
     imgElement.parentElement.classList.add('image-set'); // Add class to hide placeholder text
 }
 
